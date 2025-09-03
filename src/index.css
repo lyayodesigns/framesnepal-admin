@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for ReactCrop */
+.ReactCrop {
+  position: relative;
+  cursor: crosshair;
+  background-color: #fff;
+  max-width: 100%;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.ReactCrop:hover {
+  border-color: #3b82f6;
+}
+
+.ReactCrop__crop-selection {
+  border: 2px solid #3b82f6 !important;
+  box-shadow: 0 0 0 9999em rgba(0, 0, 0, 0.5);
+}
+
+.ReactCrop__drag-handle {
+  width: 12px !important;
+  height: 12px !important;
+  background-color: #3b82f6 !important;
+  border: 2px solid #fff !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.ReactCrop__drag-handle:hover {
+  background-color: #2563eb !important;
+}
+
+.ReactCrop__drag-bar {
+  background-color: #3b82f6 !important;
+}
+
+/* Improve drag handle visibility */
+.ReactCrop__drag-handle.ord-nw,
+.ReactCrop__drag-handle.ord-ne,
+.ReactCrop__drag-handle.ord-sw,
+.ReactCrop__drag-handle.ord-se {
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 50% !important;
+}

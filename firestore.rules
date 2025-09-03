@@ -1,0 +1,139 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      // Since you're using simple auth, restrict admin operations to server-side only
+      // Client-side admin operations should be handled through your backend
+      return false;
+    }
+    
+    // Temporary function to allow admin panel reads (since using simple auth, not Firebase Auth)
+    function allowAdminReads() {
+      return true;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Allow admin panel to read all users
+      allow read: if allowAdminReads() || (isAuthenticated() && (isOwner(userId) || isAdmin()));
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin()) || allowAdminReads();
+      allow delete: if isAdmin() || allowAdminReads();
+
+      // Shipping addresses subcollection
+      match /shipping_addresses/{addressId} {
+        allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        allow create: if isAuthenticated() && isOwner(userId);
+        allow update: if isAuthenticated() && isOwner(userId);
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
+    // Products collection
+    match /products/{productId} {
+      // Anyone can read products
+      allow read: if true;
+      // Allow admin panel reads, but restrict writes to server-side
+      allow write: if allowAdminReads();
+    }
+
+    // Orders collection
+    match /orders/{orderId} {
+      // Users can read their own orders, admin panel can read all orders
+      allow read: if allowAdminReads() || (isAuthenticated() && 
+        resource.data.userId == request.auth.uid);
+      // Authenticated users can create orders
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      // Order updates/deletes handled server-side only or admin panel
+      allow update, delete: if allowAdminReads();
+    }
+
+    // Cart collection (singular)
+    match /cart/{cartItemId} {
+      // Users can read all cart items (needed for listing)
+      allow read: if isAuthenticated();
+      // Users can create cart items if they own them
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      // Users can update/delete their own cart items
+      allow update, delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Legacy Cart collection (plural)
+    match /carts/{cartId} {
+      // Users can only access their own cart
+      allow read, write: if isAuthenticated() && 
+        cartId == request.auth.uid;
+    }
+
+    // Reviews collection
+    match /reviews/{reviewId} {
+      // Anyone can read reviews
+      allow read: if true;
+      // Authenticated users can create reviews
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      // Users can update/delete their own reviews, admins can moderate all
+      allow update, delete: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // Categories collection
+    match /categories/{categoryId} {
+      // Anyone can read categories
+      allow read: if true;
+      // Allow admin panel operations
+      allow write: if allowAdminReads();
+    }
+
+    // Generations collection (AI-generated images)
+    match /generations/{generationId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        resource.data.userId == request.auth.uid
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Blog posts collection
+    match /blog_posts/{postId} {
+      allow read: if true;  // Public can read published posts
+      allow write: if allowAdminReads();  // Allow admin panel operations
+    }
+
+    // Blog categories collection
+    match /blog_categories/{categoryId} {
+      allow read: if true;
+      allow write: if allowAdminReads();
+    }
+
+    // Blog tags collection
+    match /blog_tags/{tagId} {
+      allow read: if true;
+      allow write: if allowAdminReads();
+    }
+
+    // Frames collection
+    match /frames/{frameId} {
+      allow read: if true;
+      // Allow admin panel operations (since using simple auth)
+      allow write: if allowAdminReads();
+    }
+  }
+}

@@ -1,0 +1,68 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Product images (allow admin panel uploads)
+    match /products/{fileName} {
+      allow read: if true;  // Anyone can view product images
+      allow write: if true;  // Allow admin panel uploads (using simple auth)
+    }
+    
+    // Frame images (allow admin panel uploads)
+    match /frames/{fileName} {
+      allow read: if true;  // Anyone can view frame images
+      allow write: if true;  // Allow admin panel uploads (using simple auth)
+    }
+    
+    // User uploaded images (profile, etc)
+    match /users/{userId}/{fileName} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isAuthenticated() && (isOwner(userId) || isAdmin()) &&
+        request.resource.size < 5 * 1024 * 1024 &&  // 5MB max
+        request.resource.contentType.matches('image/.*');  // Must be an image
+    }
+    
+    // Order images (receipts, proofs, etc)
+    match /orders/{orderId}/{fileName} {
+      allow read: if isAuthenticated() && (
+        resource.metadata.userId == request.auth.uid || isAdmin()
+      );
+      allow write: if isAuthenticated() && (
+        request.resource.metadata.userId == request.auth.uid || isAdmin()
+      ) &&
+        request.resource.size < 10 * 1024 * 1024 &&  // 10MB max
+        request.resource.contentType.matches('image/.*');  // Must be an image
+    }
+    
+    // Order images uploaded by users during checkout
+    match /order-images/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();  // Simplified for debugging - will tighten later
+    }
+    
+    // AI generated images
+    match /ai-generated/{userId}/{fileName} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isAdmin();  // Only admin/server can write AI generated images
+    }
+    
+    // Blog images
+    match /blog/{fileName} {
+      allow read: if true;
+      allow write: if true; // Allow admin panel uploads
+    }
+  }
+}
