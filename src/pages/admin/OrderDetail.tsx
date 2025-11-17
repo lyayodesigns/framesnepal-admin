@@ -32,7 +32,6 @@ export default function OrderDetail() {
         }
 
         const orderData = orderSnap.data();
-        console.log('Order data:', orderData);
         
         // Convert Firestore Timestamp to string for consistent handling
         const createdAt = orderData.createdAt?.toDate?.() 
@@ -52,6 +51,14 @@ export default function OrderDetail() {
         const derivedFrameName = orderData.frameName || firstItem.frameName || firstItem.name || 'N/A';
         const derivedFrameOrientation = orderData.frameOrientation || firstItem.frameOrientation || null;
 
+        // Derive size details for display
+        const derivedSizeName = orderData.sizeName || firstItem.sizeName || null;
+        const derivedSizeMultiplier = orderData.sizeMultiplier || firstItem.sizeMultiplier || null;
+
+        // Derive image positioning details for display
+        const derivedImagePosition = orderData.imagePosition || firstItem.imagePosition || { x: 0, y: 0 };
+        const derivedImageZoom = orderData.imageZoom || firstItem.imageZoom || 100;
+
         setOrder({
           id: orderSnap.id,
           ...orderData,
@@ -59,6 +66,10 @@ export default function OrderDetail() {
           frameImage: derivedFrameImage || undefined,
           frameName: derivedFrameName || undefined,
           frameOrientation: derivedFrameOrientation || undefined,
+          sizeName: derivedSizeName || undefined,
+          sizeMultiplier: derivedSizeMultiplier || undefined,
+          imagePosition: derivedImagePosition,
+          imageZoom: derivedImageZoom,
           createdAt,
           updatedAt
         } as Order);
@@ -195,14 +206,116 @@ export default function OrderDetail() {
               </dd>
             </div>
 
-            {order.sizeName && (
+            {order.imageUrl && order.frameImage && (
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Size</dt>
+                <dt className="text-sm font-medium text-gray-500">Order Preview</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {order.sizeName} (Multiplier: {order.sizeMultiplier || 1})
+                  <div className="space-y-4">
+                    {/* Preview Container */}
+                    <div className="relative inline-block bg-gray-100 rounded-lg p-4">
+                      <div 
+                        className="relative"
+                        style={{ 
+                          width: order.frameOrientation === 'landscape' ? '600px' : '450px', 
+                          height: order.frameOrientation === 'landscape' ? '450px' : '600px'
+                        }}
+                      >
+                        {/* Frame Image - On Top */}
+                        <div 
+                          className="absolute inset-0 z-10 pointer-events-none"
+                          style={{
+                            transform: order.frameOrientation === 'landscape' ? 'rotate(90deg) scale(1.33)' : 'none',
+                            transformOrigin: 'center'
+                          }}
+                        >
+                          <img
+                            src={order.frameImage}
+                            alt="Frame"
+                            className="absolute inset-0 w-full h-full"
+                            style={{ objectFit: 'contain' }}
+                          />
+                        </div>
+
+                        {/* Image Container - Behind Frame */}
+                        <div 
+                          className="absolute inset-0 z-0"
+                          style={{ padding: '12%' }}
+                        >
+                          <div className="relative w-full h-full overflow-hidden">
+                            <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+                              <div className="relative w-[90%] h-[90%] overflow-hidden">
+                                <img
+                                  src={order.imageUrl}
+                                  alt="Customer image preview"
+                                  style={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'contain',
+                                    transform: `translate(${order.imagePosition?.x || 0}px, ${order.imagePosition?.y || 0}px) scale(${(order.imageZoom || 100) / 100})`,
+                                    maxWidth: '100%',
+                                    maxHeight: '100%'
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Positioning Details */}
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                      <h4 className="font-semibold text-gray-900 mb-3">Image Positioning Details</h4>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600">X-Axis Position:</span>
+                          <span className="ml-2 font-medium text-gray-900">
+                            {order.imagePosition?.x || 0} ({50 + (order.imagePosition?.x || 0)}%)
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Y-Axis Position:</span>
+                          <span className="ml-2 font-medium text-gray-900">
+                            {order.imagePosition?.y || 0} ({50 + (order.imagePosition?.y || 0)}%)
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Zoom Level:</span>
+                          <span className="ml-2 font-medium text-gray-900">
+                            {order.imageZoom || 100}%
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Orientation:</span>
+                          <span className="ml-2 font-medium text-gray-900 capitalize">
+                            {order.frameOrientation || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </dd>
               </div>
             )}
+
+            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt className="text-sm font-medium text-gray-500">Size</dt>
+              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                {order.sizeName ? (
+                  <>
+                    {order.sizeName} (Multiplier: {order.sizeMultiplier || 1})
+                  </>
+                ) : order.size?.dimensions ? (
+                  <>
+                    {order.size.dimensions}
+                  </>
+                ) : (
+                  <span className="text-gray-400">No size information</span>
+                )}
+              </dd>
+            </div>
 
             <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
               <dt className="text-sm font-medium text-gray-500">Customer Image</dt>

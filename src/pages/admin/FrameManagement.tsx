@@ -245,7 +245,6 @@ export default function FrameManagement() {
 
   // Show delete confirmation modal
   const handleDeleteFrame = (frameId: string, imageUrl: string) => {
-    console.log('Delete button clicked for frame:', frameId);
     setFrameToDelete({ id: frameId, imageUrl });
     setShowDeleteConfirm(true);
   };
@@ -255,36 +254,27 @@ export default function FrameManagement() {
     if (!frameToDelete) return;
     
     const { id: frameId, imageUrl } = frameToDelete;
-    console.log('Delete confirmed, proceeding...');
     setShowDeleteConfirm(false);
     
     try {
       setLoading(true);
       
-      console.log('Attempting to delete Firestore document...');
       // Delete document from Firestore
       await deleteDoc(doc(db, 'frames', frameId));
-      console.log('Firestore document deleted successfully');
       
       // Try to delete image from Storage if it exists
       try {
         if (imageUrl && imageUrl.includes('firebase')) {
-          console.log('Attempting to delete image from Storage...');
           const imageRef = ref(storage, imageUrl);
           await deleteObject(imageRef);
-          console.log('Storage image deleted successfully');
         }
       } catch (imageErr) {
-        console.error('Error deleting image (non-critical):', imageErr);
       }
       
       // Update local state
       setFrames(prev => prev.filter(frame => frame.id !== frameId));
       setError(null);
-      console.log('Frame deleted successfully');
     } catch (err) {
-      console.error('Error deleting frame:', err);
-      console.error('Error details:', err);
       setError('Failed to delete frame. Please try again.');
     } finally {
       setLoading(false);

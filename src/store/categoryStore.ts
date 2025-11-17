@@ -30,22 +30,18 @@ export const useCategoryStore = create<CategoryStore>((set) => ({
   getAllCategories: async () => {
     set({ loading: true, error: null });
     try {
-      console.log('Fetching all categories from Firestore...');
       const categoriesRef = collection(db, 'categories');
       const q = query(categoriesRef, orderBy('name', 'asc'));
       const querySnapshot = await getDocs(q);
       
-      console.log(`Found ${querySnapshot.size} categories in Firestore`);
       
       if (querySnapshot.empty) {
-        console.log('No categories found in the collection');
         set({ categories: [], loading: false });
         return [];
       }
       
       const categories = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        console.log(`Processing category ${doc.id}:`, data);
         
         return {
           id: doc.id,
@@ -56,11 +52,9 @@ export const useCategoryStore = create<CategoryStore>((set) => ({
         } as Category;
       });
 
-      console.log('Processed categories:', categories);
       set({ categories, loading: false });
       return categories;
     } catch (error) {
-      console.error('Error fetching all categories:', error);
       set({ error: 'Failed to fetch categories', loading: false, categories: [] });
       throw error;
     }

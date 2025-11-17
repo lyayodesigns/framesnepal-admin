@@ -69,21 +69,17 @@ export const useOrderStore = create<OrderState>((set) => ({
 
   getAllOrders: async () => {
     try {
-      console.log('Fetching all orders from Firestore...');
       const ordersRef = collection(db, 'orders');
       const q = query(ordersRef, orderBy('createdAt', 'desc'));
       const querySnapshot = await getDocs(q);
       
-      console.log(`Found ${querySnapshot.size} orders in Firestore`);
       
       if (querySnapshot.empty) {
-        console.log('No orders found in the collection');
         return [];
       }
       
       const orders = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        console.log(`Processing order ${doc.id}:`, data);
         
         // Convert Firestore Timestamp to string for consistent handling
         const createdAt = data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : new Date().toISOString();
